@@ -3,17 +3,18 @@ import asyncio
 from flask import Flask, render_template
 from flask_socketio import SocketIO
 import threading
+import os
 
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode='threading', cors_allowed_origins="*")
 
 async def create_reddit_instance():
     reddit = asyncpraw.Reddit(
-        client_id="KMxosgu6dqaN09x6yDuhYA",
-        client_secret="gcxn_2uK_m75gDinMgo-cdlb8DRayg",
-        username="biroman",
-        password="Regulering2regul",
-        user_agent="subreddit_watcher (by u/biroman)",
+        client_id=os.getenv("REDDIT_CLIENT_ID"),
+        client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
+        username=os.getenv("REDDIT_USERNAME"),
+        password=os.getenv("REDDIT_PASSWORD"),
+        user_agent=os.getenv("REDDIT_USER_AGENT"),
     )
     return reddit
 
