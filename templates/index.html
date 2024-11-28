@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reddit Live Feed</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+    <style>
+      body {
+        background-color: #121212;
+        color: #e0e0e0;
+        font-family: Arial, sans-serif;
+      }
+      .container {
+        max-width: 800px;
+      }
+      .post {
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        background-color: #1e1e1e;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      }
+      .post a {
+        color: #64b5f6;
+        text-decoration: none;
+      }
+      .post a:hover {
+        text-decoration: underline;
+      }
+      .post-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #ffffff;
+      }
+      .text-muted {
+        color: #a0a0a0 !important;
+      }
+      .actions {
+        margin-top: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .form-control {
+        background-color: #2e2e2e;
+        border: 1px solid #444;
+        color: #e0e0e0;
+        flex: 1;
+        margin-right: 10px;
+      }
+      .form-control::placeholder {
+        color: #a0a0a0;
+      }
+      .btn-comment {
+        background-color: #64b5f6;
+        color: white;
+        border: none;
+      }
+      .btn-comment:hover {
+        background-color: #42a5f5;
+      }
+      .btn-ignore {
+        background-color: #f44336;
+        color: white;
+        border: none;
+      }
+      .btn-ignore:hover {
+        background-color: #d32f2f;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mt-5">
+      <h1 class="text-center mb-4">Reddit Live Feed</h1>
+      <div id="feed"></div>
+    </div>
+
+    <script>
+      const socket = io();
+
+      socket.on("new_post", (data) => {
+        const feed = document.getElementById("feed");
+        const post = document.createElement("div");
+        post.className = "post";
+        post.id = `post-${data.id}`;
+        post.innerHTML = `
+                <div class="post-title">${data.title}</div>
+                <p class="text-muted">Subreddit: <strong>${data.subreddit}</strong></p>
+                <p class="text-muted">Author: <strong>${data.author}</strong></p>
+                <p><a href="${data.url}" target="_blank">Read more</a></p>
+                <div class="actions">
+                    <input type="text" class="form-control" placeholder="Write a comment..." id="comment-${data.id}">
+                    <div>
+                        <button class="btn btn-comment me-2" onclick="submitComment('${data.id}')">Comment</button>
+                        <button class="btn btn-ignore" onclick="ignorePost('${data.id}')">Ignore</button>
+                    </div>
+                </div>
+            `;
+        feed.insertBefore(post, feed.firstChild);
+      });
+
+      function submitComment(postId) {
+        const commentBox = document.getElementById(`comment-${postId}`);
+        const comment = commentBox.value.trim();
+        if (comment) {
+          socket.emit("post_comment", { post_id: postId, comment: comment });
+        } else {
+          alert("Please enter a comment!");
+        }
+      }
+
+      function ignorePost(postId) {
+        const post = document.getElementById(`post-${postId}`);
+        post.remove();
+      }
+
+      socket.on("comment_success", (data) => {
+        const post = document.getElementById(`post-${data.post_id}`);
+        post.remove();
+      });
+
+      socket.on("comment_failure", (data) => {
+        const post = document.getElementById(`post-${data.post_id}`);
+        const actions = post.querySelector(".actions");
+        actions.innerHTML += `<p class="text-danger">Failed to comment: ${data.error}</p>`;
+      });
+    </script>
+  </body>
+</html>
